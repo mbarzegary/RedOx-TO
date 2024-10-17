@@ -1,0 +1,7 @@
+#!/bin/bash
+
+export OMP_NUM_THREADS=1
+
+python batch_run.py --sim_only
+
+python batch_run.py --post_only

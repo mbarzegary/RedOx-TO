@@ -1,0 +1,7 @@
+#!/bin/bash
+
+export OMP_NUM_THREADS=1
+
+srun python optimization.py --porosity 0.5 --tau 0.5 --delta 1.0 --mu 0.1 --maxiters 150 \
+        --effective_porosity effective --dim 2 --mesh fine --save_every 5 --Re 1.0 --Da 1e-05 \
+        --u_in 1.0 --flow_solver direct --elec_contrib_ratio 1.0 --output_dir ./results/2d/run1

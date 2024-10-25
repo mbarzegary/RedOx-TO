@@ -22,6 +22,7 @@ from charge_problem import *
 
 def perform_topo_opt():
 
+    # Set up argument parser for command-line options
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("--filter_radius", type=float, default=0.01)
     parser.add_argument("--porosity", type=float, default=0.5)
@@ -54,7 +55,7 @@ def perform_topo_opt():
 
     args, _ = parser.parse_known_args()
 
-    PETSc.Sys.Print(args)
+    # PETSc.Sys.Print(args)
     RH = args.filter_radius
     porosity = args.porosity
     effective_porosity = args.effective_porosity
@@ -83,6 +84,7 @@ def perform_topo_opt():
     elec_contrib_ratio = args.elec_contrib_ratio
     initial_gamma_value = args.initial_gamma_value
 
+    # Print problem configuration
     PETSc.Sys.Print(f'''
         Problem dimension: {dim}
         Solve charge: {solve_charge}
@@ -117,12 +119,14 @@ def perform_topo_opt():
         Mesh config: {mesh_type}
     ''')
 
+    # Dump arguments to a file for later reference in post-processing
     dump_args_dict(output_dir, args)
 
+    # Set up the mesh based on problem dimension and mesh type
     if dim == 2:
         target_continuity = None
     elif dim ==3:
-        target_continuity = H1 # to allow isocontours
+        target_continuity = H1 
 
     # Load mesh
     if dim == 2:
@@ -136,13 +140,13 @@ def perform_topo_opt():
         else:
             mesh = Mesh('mesh/electrode_in_out_top_thin_3D.msh')
 
-    # initial design
+    # Initialize design variable (gamma)
     GAMMA = FunctionSpace(mesh, "DG", 0)
     gamma = Function(GAMMA)
     with stop_annotating():
         gamma.interpolate(Constant(initial_gamma_value))
 
-    # filtering
+    # Apply PDE filter to the design variable
     if dim == 2:
         helmholtz_parameters = lu
     else:
@@ -150,7 +154,7 @@ def perform_topo_opt():
     gammaf = pde_filter(GAMMA, gamma, dim, RH, helmholtz_parameters)
     gammafControl = Control(gammaf)
 
-    # forward problem
+    # Set up function spaces for the forward problem
     V = FunctionSpace(mesh, "CG", 1)
     W = V*V
 
@@ -158,11 +162,13 @@ def perform_topo_opt():
     Qflow = FunctionSpace(mesh, "CG", 1)
     Wflow = Vflow * Qflow
 
+    # Set up constants and parameters
     ramp_p = Constant(ramp_p_val)
     Re = Constant(Re_val)
     Da = Constant(Da_val)
     Placeholder(Da)
 
+    # Print problem size
     PETSc.Sys.Print(f"MPI Size: {COMM_WORLD.size}")
     PETSc.Sys.Print(f"No. of DoF in charge problem: {W.dim()}")
     PETSc.Sys.Print(f"No. of DoF in flow problem: {Wflow.dim()}\n")
@@ -173,10 +179,12 @@ def perform_topo_opt():
     else:
         solver_parameters.update(cg_pc_triang_hypre)
 
+    # Solve charge problem if enabled
     if solve_charge:
         u, i_n = charge_problem(W, gammaf, delta, mu, tau, effective_porosity, porosity, boundary_conditions, solver_parameters)
         (Phi1sol, Phi2sol) = split(u)
 
+    # Solve flow problem if enabled
     if solve_flow:
         up_forward = flow_problem(
             Wflow,
@@ -195,6 +203,7 @@ def perform_topo_opt():
         u_f, p = split(up_forward)
         up_control_f = Control(up_forward)
 
+    # Define objective functions
     def calculate_electric_loss():
         J = assemble(Constant(0) * ds(boundary_conditions["MEMBRANE"], domain=mesh))
         if solve_charge:
@@ -217,6 +226,8 @@ def perform_topo_opt():
             else: # pressure drop
                 J = assemble(p * ds(boundary_conditions["INLET"])) # / assemble(Constant(1.0)*ds(boundary_conditions["INLET"], domain=mesh))
         return J
+
+    # Calculate initial losses
     if solve_charge:
         J_initial = float(calculate_electric_loss())
     else:
@@ -226,7 +237,7 @@ def perform_topo_opt():
     else:
         Power_initial = 1
 
-    # optimization problem
+    # Set up optimization problem
     if is_forward == False:
         c = Control(gamma)
 
@@ -274,12 +285,14 @@ def perform_topo_opt():
         Jhat = ReducedFunctional(elec_contrib_ratio*J + Power, c, derivative_cb_post=deriv_cb)
         # Jhat = ReducedFunctional(J, c, derivative_cb_post=deriv_cb)
 
+        # Set up volume constraint
         Vol = assemble((1-gammaf) * dx(regions["DOMAIN"]))
         VolControl = Control(Vol)
         Volhat = ReducedFunctional(Vol, c)
         Vollimit = 1.0 * assemble(Constant(1.0) * dx(regions["DOMAIN"], domain=mesh))
         # Vollimit = 0.7 * assemble(Constant(1.0) * dx(regions["DOMAIN"], domain=mesh))
 
+        # Define and solve the optimization problem
         problem = MinimizationProblem(Jhat, bounds=(0.0, 1.0), constraints=[ReducedInequality(Volhat, Vollimit, VolControl)])
 
         parameters_mma = {
@@ -297,12 +310,15 @@ def perform_topo_opt():
         results = solver.solve()
         gamma_opt = results["control"]
 
+        # Update gamma with optimized values
         gamma.assign(gamma_opt)
         gammaf.assign(gammafControl.tape_value())
 
+        # Solve final charge problem if enabled
         if solve_charge:
             u, i_n = charge_problem(W, gammaf, delta, mu, tau, effective_porosity, porosity, boundary_conditions, solver_parameters)
 
+    # Save results
     par_loop(
         ("{[i] : 0 <= i < f.dofs}", "f[i, 0] = 0.0"),
         dx(regions["IN_DOMAIN"]),

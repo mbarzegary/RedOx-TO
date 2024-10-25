@@ -81,6 +81,7 @@ def convert_csv_to_multiple_lines(csv_string, rows_per_line):
 
 if __name__ == "__main__":
 
+    # Set up argument parser
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("--input_dir", type=str, default="./results")
     parser.add_argument("--out_name", type=str, default="./out")
@@ -100,6 +101,7 @@ if __name__ == "__main__":
         csv_string = read_csv_from_json(args_in_filename)
         # csv_string = "tau: 0.005,delta: 1,mu: 0.1,posority: 0.5,correction: effective,maxiters: 80,dir: ./results-1,flow_solver: direct,Re: 1.0,Da: 1e-4,u_in: 1.0,full_NS: yes,charge: yes,flow: yes, elec_contrib: 1.0"
 
+        # Generate isocontour plots using ParaView
         cmd = f"pvpython make_screenshot.py --input_dir {input_dir} --out_name {out_raw_filename}"
         os.system(cmd)
 
@@ -113,5 +115,6 @@ if __name__ == "__main__":
 
         add_text_to_image(input_path, out_filename, added_height, text_lines, font_size)
 
+    # Generate loss plot
     cmd = f"python plot_loss.py --input_file {loss_in_filename} --out_name {loss_out_filename}"
     os.system(cmd)

@@ -3,12 +3,14 @@ from penalization import ramp
 from helpers import *
 
 def inflow(u_inflow, dim, W):
+    # Define the inflow boundary condition
     mesh = W.ufl_domain()
     if dim == 2:
         x, y = SpatialCoordinate(mesh)
     elif dim == 3:
         x, y, z = SpatialCoordinate(mesh)
 
+    # Return the inflow velocity vector based on dimension
     if dim == 2:
         return as_vector(
             [
@@ -72,12 +74,15 @@ def flow_problem(
     use_GLS,
     dim,
     solve_full_NS,
-    solver_parameters=None,
-):
+    solver_parameters=None):
+    # Define test functions
     v, q = TestFunctions(W)
 
+    # Define the trial functions
     up = Function(W)
     u, p = split(up)
+
+    # Define the variational form
     F = (
         1.0 / Re * inner(grad(u), grad(v)) * dx
         + (inner(dot(grad(u), u), v) * dx  if solve_full_NS else 0) # switch between NS and Stokes
@@ -88,14 +93,17 @@ def flow_problem(
         * dx(regions["DOMAIN"])
     )
 
+    # Add GLS stabilization if enabled
     if use_GLS:
         F = F + GLS(u, v, p, q, rhof, Da, Re, penalization=penalization, ramp_p=ramp_p)
 
+    # Define no-slip boundary condition
     if dim == 2:
         noslip = Constant((0.0, 0.0))
     else:
         noslip = Constant((0.0, 0.0, 0.0))
 
+    # Set up boundary conditions
     bcs_1 = DirichletBC(W.sub(0), noslip, [boundary_conditions["WALLS"],
                                             boundary_conditions["CURRENT_COLLECTOR"],
                                             boundary_conditions["MEMBRANE"]])
@@ -105,6 +113,7 @@ def flow_problem(
 
     bcs = [bcs_1, bcs_2]
 
+    # Set up and solve the problem
     problem = NonlinearVariationalProblem(F, up, bcs=bcs)
     solver = NonlinearVariationalSolver(problem, solver_parameters=solver_parameters)
     solver.solve()

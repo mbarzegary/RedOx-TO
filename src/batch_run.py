@@ -6,6 +6,7 @@ import argparse
 
 def command_generator(sim_code, post_code, perform_sim, perform_post, loss_plot_only, *args_and_values):
 
+    # Generate all possible combinations of parameter values
     parameter_combinations = list(itertools.product(*[values if isinstance(values, list) else [values] for _, values in args_and_values]))
 
     counter = itertools.count()
@@ -17,23 +18,26 @@ def command_generator(sim_code, post_code, perform_sim, perform_post, loss_plot_
         post_cmd_args = ""
         for (param_name, _), param_value in zip(args_and_values, combination):
             if param_name == "output_dir":
+                # Special handling for output directory
                 param_value = f"{str(param_value)}/run{comb_num}"
                 post_cmd_args = f' --input_dir {str(param_value)} --out_name postprocess/run{comb_num}'
             sim_cmd_args += f" --{str(param_name)} {str(param_value)}"
 
         if perform_sim:
+            # Generate simulation command
             commands.append(sim_code + sim_cmd_args + f" 2>&1 | tee logs/run{comb_num}.log")
 
         if perform_post:
+            # Generate post-processing command
             if loss_plot_only:
                 post_cmd_args += " --loss_plot_only"
             commands.append(post_code + post_cmd_args + f" 2>&1 | tee logs/run{comb_num}-post.log")
-
 
     return commands
 
 if __name__ == "__main__":
 
+    # Set up command-line argument parser
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("--sim_only", action="store_true", default=False)
     parser.add_argument("--post_only", action="store_true", default=False)
@@ -46,6 +50,7 @@ if __name__ == "__main__":
     loss_plot_only = args.loss_plot_only
     run_commands = not args.dry_run # Run or just generate (dry run)
 
+    # Configuration parameters
     num_proc = 6
     include_num_proc = False # False for some HPC environments
 
@@ -57,6 +62,7 @@ if __name__ == "__main__":
         mpi_cmd += f"-n {num_proc} "
     sim_code = mpi_cmd + sim_code
 
+    # Define parameter values for the parameter sweep
     output_dir_values = "./results"
     porosity_values = 0.5
     tau_values = [0.5, 0.1, 0.005]
@@ -76,6 +82,7 @@ if __name__ == "__main__":
     # no_flow
     # no_charge
 
+    # Generate commands for all parameter combinations
     commands = command_generator(sim_code, post_code, perform_sim, perform_post, loss_plot_only,
                                                     ("porosity", porosity_values),
                                                     ("tau", tau_values),
@@ -95,22 +102,28 @@ if __name__ == "__main__":
                                                     )
     # print(commands)
 
+    # Create directory for command lists if it doesn't exist
     cmd_list_dir = f"./commands"
     if not os.path.exists(cmd_list_dir):
         os.makedirs(cmd_list_dir)
+    
+    # Generate timestamp for unique file naming
     ts = datetime.timestamp(datetime.now())
     date_time = datetime.fromtimestamp(ts)
     timestamp = date_time.strftime("%Y-%m-%d-%H:%M:%S")
 
+    # Write commands to file
     with open(f'{cmd_list_dir}/commands-{timestamp}.txt', 'w') as f:
         f.write('\n'.join(commands))
 
     if run_commands:
+        # Create directories for output
         os.makedirs("postprocess", exist_ok=True)
         os.makedirs("logs", exist_ok=True)
         for cmd in commands:
             print(f"RUNNING: {cmd}")
             start = time.time()
             os.system(cmd)
+            # Record execution time for each command
             with open(f'{cmd_list_dir}/commands-{timestamp}_time.txt', "a+") as f:
                 f.write(f"{time.time()-start:.0f} seconds\n")

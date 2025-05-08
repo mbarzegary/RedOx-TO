@@ -1,7 +1,7 @@
 # RedOx-TO: Topology optimization framework for porous electrodes in electrochemical flow reactors
 
 [![DOI](https://img.shields.io/badge/DOI-10.1016/j.cej.2025.161815-blue)](https://doi.org/10.1016/j.cej.2025.161815)
-
+[![license: GPL v3](https://img.shields.io/badge/license-GPLv3-blue.svg)](LICENSE)
 
 ## About
 
@@ -65,7 +65,10 @@ This code has been used in the [following publication](https://doi.org/10.1016/j
       doi = {10.1016/j.cej.2025.161815},
     }
 
-<!--
 ## License
 
+RedOx-TO is licensed under the terms of the [GNU General Public License v3](https://www.gnu.org/licenses).
+
+
+<!--
 ## Contributors -->

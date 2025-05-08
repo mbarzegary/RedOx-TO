@@ -30,9 +30,22 @@ The `run_scripts` directory contains a few examples on how to use the framework 
 
 <!-- For more details on available arguments, run the scripts with the `--help` flag. -->
 
-<!--
-## Installation
+## Requirements
 
+This code requires the following software packages:
+
+* [Firedrake](https://www.firedrakeproject.org/): Core finite element library used for solving PDEs, with features for automatic differentiation and parallel computing
+* [pyadjoint](https://pyadjoint.org/): Automatic differentiation tool for adjoint analysis, installs with Firedrake
+* [PETSc](https://petsc.org/) and [petsc4py](https://petsc.org/release/petsc4py/): Python bindings for PETSc (Portable, Extensible Toolkit for Scientific Computation)
+* [pyMMAopt](https://github.com/LLNL/pyMMAopt): Python implementation of the Method of Moving Asymptotes (MMA) for optimization
+* [ParaView](https://www.paraview.org/) (Python bindings): Visualization tool used for post-processing and generating images of results
+* [PIL/Pillow](https://python-pillow.github.io/): Python Imaging Library for image manipulation in post-processing
+* [Matplotlib](https://matplotlib.org/): Python plotting library used for creating loss function graphs
+* [Gmsh](https://gmsh.info/): Meshing tool to generate the finite element mesh files required for the simulations
+
+The code uses MPI for parallel execution.
+
+<!--
 ## Publications
 
 ## License

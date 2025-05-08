@@ -1,4 +1,9 @@
-# Topology optimization framework for porous electrodes in electrochemical flow reactors
+# RedOx-TO: Topology optimization framework for porous electrodes in electrochemical flow reactors
+
+[![DOI](https://img.shields.io/badge/DOI-10.1016/j.cej.2025.161815-blue)](https://doi.org/10.1016/j.cej.2025.161815)
+
+
+## About
 
 This repository contains a topology optimization framework for porous electrodes in  electrochemical flow cells. The framework solves combined flow and charge transport problems and is implemented in Python using the Firedrake and PETSc libraries for finite element modeling.
 
@@ -45,9 +50,22 @@ This code requires the following software packages:
 
 The code uses MPI for parallel execution.
 
-<!--
 ## Publications
 
+This code has been used in the [following publication](https://doi.org/10.1016/j.cej.2025.161815). In scientific work, where results to some extent are obtained using RedOx-TO, please cite the following article:
+
+    @article{barzegari2025redoxto,
+      title = {Topology optimization of porous electrodes for electrochemical flow reactors using the finite element method and triply periodic minimal surfaces},
+      author = {Mojtaba Barzegari and Antoni Forner-Cuenca},
+      journal = {Chemical Engineering Journal},
+      volume = {512},
+      pages = {161815},
+      year = {2025},
+      issn = {1385-8947},
+      doi = {10.1016/j.cej.2025.161815},
+    }
+
+<!--
 ## License
 
 ## Contributors -->
